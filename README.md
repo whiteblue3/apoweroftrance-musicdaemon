@@ -1,4 +1,4 @@
-Music Daemon is server-side software for streaming radio
+Music Daemon is server-side software for streaming radio.
 
 # Install Pre-Requirements
 You must install libshout on your system.
