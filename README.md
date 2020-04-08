@@ -19,6 +19,23 @@ run code in terminal
 
     pip3 install -r requirement.txt
 
+## Run as service daemon in Ubuntu18.04
+- copy these 2 files to 
+
+
+    service/musicdaemon: /etc/logrotate.d/musicdaemon
+    service/musicdaemon.service: /etc/systemd/system
+
+and grant permission
+
+    chmod a+x /etc/systemd/system/musicdaemon.service
+    
+and run this command
+
+    systemctl daemon-reload
+    systemctl enable musicdaemon.service
+    systemctl start musicdaemon.service
+    
 # TODO
 - [ ] AAC support
 - [ ] Google Cloud Storage mount
