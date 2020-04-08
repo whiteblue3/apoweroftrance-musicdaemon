@@ -7,7 +7,7 @@ import aiohttp
 from urllib.parse import urlencode
 from datetime import datetime
 from dateutil.tz import tzlocal
-from commands import QUEUE, UNQUEUE, SETLIST, CMD, Queue
+from commands import QUEUE, UNQUEUE, SETLIST
 from process.shared import ns, cmd_queue, get_ns_obj, set_ns_obj, ns_config
 from logger import Logger
 
