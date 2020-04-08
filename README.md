@@ -20,11 +20,10 @@ run code in terminal
     pip3 install -r requirement.txt
 
 ## Run as service daemon in Ubuntu18.04
-- copy these 2 files to 
+- copy these 2 files to location
 
-
-    service/musicdaemon: /etc/logrotate.d/musicdaemon
-    service/musicdaemon.service: /etc/systemd/system
+1) service/musicdaemon: /etc/logrotate.d/musicdaemon
+2) service/musicdaemon.service: /etc/systemd/system
 
 and grant permission
 
