@@ -1,0 +1,14 @@
+[Unit]
+Description=Music Daemon Service
+After=multi-user.target
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/python /opt/musicdaemon/main.py --pid /var/run/musicdaemon.pid --log /var/log/musicdaemon/musicdaemon.log
+Restart=always
+PIDFile=/var/run/musicdaemon.pid
+WorkingDirectory=/opt/musicdaemon/
+ExecStop=/bin/kill $MAINPID
+
+[Install]
+WantedBy=multi-user.target
