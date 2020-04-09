@@ -1,3 +1,5 @@
+This project is a part of [whiteblue3/apoweroftrance-radio](https://github.com/whiteblue3/apoweroftrance-radio) project
+
 Music Daemon is server-side software for streaming radio.
 
 # Install Pre-Requirements
