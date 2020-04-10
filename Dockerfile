@@ -20,12 +20,10 @@ WORKDIR /opt/musicdaemon
 COPY ./entrypoint.sh /opt/musicdaemon/entrypoint.sh
 
 VOLUME ["/srv/media"]
-#COPY config.ini ./config.ini
 
 RUN apt-get -y update
 RUN apt-get install -y curl
 RUN apt-get install -y python3.6 python3-pip software-properties-common libshout3-dev vim
-#RUN python-setuptools build-essential git libvorbis-dev libogg-dev libfdk-aac-dev
 
 # Install gcsfuse.
 RUN echo "deb http://packages.cloud.google.com/apt gcsfuse-bionic main" | tee /etc/apt/sources.list.d/gcsfuse.list
@@ -45,23 +43,12 @@ RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyri
 RUN apt-get update
 RUN apt-get install -y google-cloud-sdk
 
-#WORKDIR /root
-#RUN git clone https://github.com/whiteblue3/libshout-aac.git
-#WORKDIR /root/libshout-aac
-#RUN ./configure
-#RUN make
-#RUN make install
-
 WORKDIR /opt/musicdaemon
-#RUN python3 -m pip install -r requirement.txt
+
+RUN python3 -m pip install -r requirement.txt
 
 EXPOSE 9000
 
 RUN chmod a+x entrypoint.sh
 
 ENTRYPOINT ["./entrypoint.sh"]
-
-#ENTRYPOINT ["python3", "main.py"]
-
-#CMD ["systemctl enable /etc/systemd/system/musicdaemon.service"]
-#CMD ["systemctl start /etc/systemd/system/musicdaemon.service"]
