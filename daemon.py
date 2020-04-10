@@ -164,7 +164,6 @@ class MusicDaemon:
                     if not chunk:
                         is_streaming = False
                         f.close()
-                        self.now_playing = None
 
                         if (
                             self.on_stop_callback is None or
@@ -172,7 +171,11 @@ class MusicDaemon:
                         ):
                             pass
                         else:
-                            self.request_callback("GET", self.on_stop_callback, self.on_stop_event)
+                            self.request_callback(
+                                "POST", self.on_stop_callback, self.on_stop_event, json.dumps(self.now_playing)
+                            )
+
+                        self.now_playing = None
 
                     else:
                         s.send(chunk)

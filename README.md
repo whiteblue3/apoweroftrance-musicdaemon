@@ -60,7 +60,7 @@ This section describe how to configure config.ini
 ## daemon section
 
     [daemon]
-    musicdaemon = yui, alice, miku
+    musicdaemon = default
     server = server
 
 This section is configure daemon
@@ -73,12 +73,12 @@ This section is configure daemon
     [icecast2_yui]
     host = 127.0.0.1
     port = 8000
-    mount = yui
+    mount = default
     user = source
     password = hackme
     codec = mp3
-    name = A Power of Trance CH.YUI
-    genre = Trance
+    name = 
+    genre = 
     bitrate = 128000
     samplerate = 44100
     url =
@@ -89,9 +89,9 @@ The name of section must format of 'icecast_[daemon name in daemon section]'
 ## callback section
 
     [callback_yui]
-    on_startup = https://r3xgeyodxb.execute-api.ap-northeast-2.amazonaws.com/test
-    on_play = https://ezlzag93l0.execute-api.ap-northeast-2.amazonaws.com/test
-    on_stop = https://rnw46ry881.execute-api.ap-northeast-2.amazonaws.com/test
+    on_startup = 
+    on_play =
+    on_stop = 
 
 This section is configure external callback.
 The name of section must format of 'callback_[daemon name in daemon section]'
@@ -100,9 +100,9 @@ The name of section must format of 'callback_[daemon name in daemon section]'
 - on_play: call when play each music and also used for play statistics
 - on_stop: call when stop each music and also used for queue-in another music
 
-on_startup and on_stop is called by 'GET' method and parameters can be include in url-path or ? query-string.
+on_startup is called by 'GET' method and parameters can be include in url-path or ? query-string.
 
-on_play is called by 'POST' method and post data is a JSON format like below queue format
+on_play and on_stop is called by 'POST' method and post data is a JSON format like below queue format
 
 # Queue Format
 Queue format used for queue-in music or replace playlist.
@@ -145,7 +145,7 @@ You can post data like this
 
     {
         "host": "server",
-        "target": "yui",
+        "target": "default",
         "command": "queue",
         "data": {
             "id": "0",
@@ -166,7 +166,7 @@ queue command is add music to playlist
 
     {
         "host": "server",
-        "target": "yui",
+        "target": "default",
         "command": "queue",
         "data": {
             "id": "0",
@@ -184,7 +184,7 @@ data format like this
 
     {
         "host": "server",
-        "target": "yui",
+        "target": "default",
         "command": "unqueue",
         "data": {
             "index_at": 0
@@ -198,7 +198,7 @@ setlist command is replace the playlist
 
     {
         "host": "server",
-        "target": "yui",
+        "target": "default",
         "command": "setlist",
         "data": [
             {
