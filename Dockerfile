@@ -14,11 +14,13 @@ COPY ./service/musicdaemon.service /etc/systemd/system
 
 RUN chmod a+x /etc/systemd/system/musicdaemon.service
 
-COPY . /opt/musicdaemon
+#COPY . /opt/musicdaemon
 WORKDIR /opt/musicdaemon
 
+COPY ./entrypoint.sh /opt/musicdaemon/entrypoint.sh
+
 VOLUME ["/srv/media"]
-COPY config.ini ./config.ini
+#COPY config.ini ./config.ini
 
 RUN apt-get -y update
 RUN apt-get install -y curl
@@ -51,9 +53,11 @@ RUN apt-get install -y google-cloud-sdk
 #RUN make install
 
 WORKDIR /opt/musicdaemon
-RUN python3 -m pip install -r requirement.txt
+#RUN python3 -m pip install -r requirement.txt
 
 EXPOSE 9000
+
+RUN chmod a+x entrypoint.sh
 
 ENTRYPOINT ["./entrypoint.sh"]
 

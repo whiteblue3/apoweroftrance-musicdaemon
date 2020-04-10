@@ -14,4 +14,5 @@ else
   echo "FUSE not using"
 fi
 
+python3 -m pip install -r requirement.txt
 python3 /opt/musicdaemon/main.py
