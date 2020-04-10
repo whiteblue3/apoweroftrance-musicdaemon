@@ -22,7 +22,7 @@ COPY config.ini ./config.ini
 
 RUN apt-get -y update
 RUN apt-get install -y curl
-RUN apt-get install -y python3.6 python3-pip software-properties-common libshout3-dev
+RUN apt-get install -y python3.6 python3-pip software-properties-common libshout3-dev vim
 #RUN python-setuptools build-essential git libvorbis-dev libogg-dev libfdk-aac-dev
 
 # Install gcsfuse.
