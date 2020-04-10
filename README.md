@@ -21,7 +21,12 @@ run code in terminal
 
     pip3 install -r requirement.txt
 
-## Run as service daemon in Ubuntu18.04
+# Run with python interpreter
+You can run with --config option
+
+    python3 /opt/musicdaemon/main.py --config=./config.ini
+
+# Run as service daemon in Ubuntu18.04
 - copy these 2 files to location
 
 1) service/musicdaemon: /etc/logrotate.d/musicdaemon
@@ -36,10 +41,16 @@ and run this command
     systemctl daemon-reload
     systemctl enable musicdaemon.service
     systemctl start musicdaemon.service
+
+In this case, config.ini only using 
+    
+    /opt/musicdaemon/config.ini
+
+You can edit this file to running.
     
 # TODO
 - [ ] AAC support
-- [ ] Google Cloud Storage mount
+- [x] Google Cloud Storage mount
 - [ ] AWS S3 mount
 
 

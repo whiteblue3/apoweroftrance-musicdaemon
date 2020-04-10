@@ -1,4 +1,5 @@
 import ast
+import argparse
 from configparser import ConfigParser, NoSectionError
 from process.master import Master
 from daemon import MusicDaemon
@@ -16,8 +17,18 @@ class Child:
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="A Power of Trance Music Daemon")
+    parser.add_argument("--config", required=False, help="Config file")
+
+    args = parser.parse_args()
+
+    if args.config is None:
+        config_file = "config.ini"
+    else:
+        config_file = args.config
+
     config = ConfigParser()
-    config.read('config.ini')
+    config.read(config_file)
 
     musicdaemon = config.get('daemon', 'musicdaemon').replace(' ', '').split(',')
     server = config.get('daemon', 'server').replace(' ', '').split(',')
