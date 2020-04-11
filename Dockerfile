@@ -1,5 +1,8 @@
 FROM python:3.6-slim
 
+ARG USER=user
+RUN groupadd -r ${USER} && useradd --no-log-init -r -g ${USER} ${USER}
+
 # gcs or s3 or none
 ENV FUSE none
 
@@ -7,24 +10,22 @@ ENV FUSE none
 ENV BUCKET apoweroftrance-media
 
 # using when FUSE is gcs
-ENV GOOGLE_APPLICATION_CREDENTIALS /root/service-account-key.json
+ENV GOOGLE_APPLICATION_CREDENTIALS /opt/musicdaemon/service-account-key.json
 
-COPY ./service/musicdaemon /etc/logrotate.d/musicdaemon
-COPY ./service/musicdaemon.service /etc/systemd/system
+COPY --chown=${USER}:${USER} ./service/musicdaemon /etc/logrotate.d/musicdaemon/
+COPY --chown=${USER}:${USER} ./service/musicdaemon.service /etc/systemd/system/
 
 RUN chmod a+x /etc/systemd/system/musicdaemon.service
 
-#COPY . /opt/musicdaemon
+RUN mkdir /opt/musicdaemon
+# Uncomment when production
+#COPY --chown=${USER}:${USER} . /opt/musicdaemon/
 WORKDIR /opt/musicdaemon
 
-COPY ./entrypoint.sh /opt/musicdaemon/entrypoint.sh
-
-VOLUME ["/srv/media"]
+COPY --chown=${USER}:${USER} ./requirement.txt /opt/musicdaemon/
+COPY --chown=${USER}:${USER} ./entrypoint.sh /opt/musicdaemon/
 
 RUN apt-get -y update
-RUN apt-get install -y build-essential software-properties-common libshout3-dev \
-    && python3 -m pip install python-shout \
-    && apt-get purge -y build-essential software-properties-common
 RUN apt-get install --no-install-recommends -y curl vim gnupg gnupg2 gnupg1 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -48,12 +49,24 @@ RUN apt-get update
 RUN apt-get install --no-install-recommends -y google-cloud-sdk \
     && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get -y update
+RUN apt-get install -y build-essential software-properties-common libshout3-dev
+
 WORKDIR /opt/musicdaemon
 
+RUN python3 -m pip install --upgrade pip \
+    && python3 -m pip install python-shout
+
+# Uncomment when production
 #RUN python3 -m pip install --no-cache-dir -r requirement.txt
 
 EXPOSE 9000
 
 RUN chmod a+x entrypoint.sh
 
-ENTRYPOINT ["./entrypoint.sh"]
+VOLUME ["/srv/media"]
+
+CMD ["/opt/musicdaemon/entrypoint.sh"]
+
+#USER ${USER}:${USER}
+#ENTRYPOINT ["/bin/bash"]
