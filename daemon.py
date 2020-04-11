@@ -95,6 +95,7 @@ class MusicDaemon:
         s.format = self.icecast2_config["codec"]
         s.protocol = 'http'
         s.name = self.icecast2_config["name"]
+        s.description = self.icecast2_config["description"]
         s.genre = self.icecast2_config["genre"]
         s.url = self.icecast2_config["url"]
         s.public = 1    # 0 | 1
@@ -217,6 +218,7 @@ class MusicDaemon:
     def on_stop_event(self, resp):
         try:
             data = json.loads(resp)
+            self.logger.log('on_stop', data)
             self.process_queue(data)
         except Exception as e:
             self.logger.log('on_stop_error', str(e))

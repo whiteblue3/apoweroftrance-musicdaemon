@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM python:3.6-slim
 
 # gcs or s3 or none
 ENV FUSE none
@@ -22,30 +22,35 @@ COPY ./entrypoint.sh /opt/musicdaemon/entrypoint.sh
 VOLUME ["/srv/media"]
 
 RUN apt-get -y update
-RUN apt-get install -y curl
-RUN apt-get install -y python3.6 python3-pip software-properties-common libshout3-dev vim
+RUN apt-get install -y build-essential software-properties-common libshout3-dev \
+    && python3 -m pip install python-shout \
+    && apt-get purge -y build-essential software-properties-common
+RUN apt-get install --no-install-recommends -y curl vim gnupg gnupg2 gnupg1 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install gcsfuse.
 RUN echo "deb http://packages.cloud.google.com/apt gcsfuse-bionic main" | tee /etc/apt/sources.list.d/gcsfuse.list
 RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 RUN apt-get update
-RUN apt-get install -y gcsfuse
+RUN apt-get install --no-install-recommends -y gcsfuse \
+    && rm -rf /var/lib/apt/lists/*
 
 # Config fuse
 RUN chmod a+r /etc/fuse.conf
 RUN perl -i -pe 's/#user_allow_other/user_allow_other/g' /etc/fuse.conf
 
 # Install gcloud.
-RUN apt-get install -y apt-transport-https
-RUN apt-get install -y ca-certificates
+RUN apt-get install --no-install-recommends -y apt-transport-https ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
 RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
 RUN apt-get update
-RUN apt-get install -y google-cloud-sdk
+RUN apt-get install --no-install-recommends -y google-cloud-sdk \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt/musicdaemon
 
-RUN python3 -m pip install -r requirement.txt
+#RUN python3 -m pip install --no-cache-dir -r requirement.txt
 
 EXPOSE 9000
 
