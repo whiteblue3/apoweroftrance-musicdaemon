@@ -1,5 +1,10 @@
 #!/bin/bash
 
-docker build -t musicdaemon:0.0.1 .
-docker tag musicdaemon:0.0.1 gcr.io/apoweroftrance/musicdaemon:0.0.1
-gcloud docker -- push gcr.io/apoweroftrance/musicdaemon:0.0.1
+APP_NAME=musicdaemon
+VERSION=0.0.2
+
+docker build -t ${APP_NAME}:${VERSION} .
+docker tag ${APP_NAME}:${VERSION} gcr.io/apoweroftrance/${APP_NAME}:${VERSION}
+docker tag ${APP_NAME}:${VERSION} gcr.io/apoweroftrance/${APP_NAME}:latest
+gcloud docker -- push gcr.io/apoweroftrance/${APP_NAME}:${VERSION}
+gcloud docker -- push gcr.io/apoweroftrance/${APP_NAME}:latest
