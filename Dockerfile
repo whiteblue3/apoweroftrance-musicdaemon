@@ -21,20 +21,41 @@ RUN python3 -m pip install --upgrade pip \
 
 EXPOSE 9000
 
-VOLUME ["/srv/media"]
+RUN mkdir -p /srv/media
 
 COPY ./startup.sh /opt/musicdaemon/startup.sh
 RUN chmod a+x /opt/musicdaemon/startup.sh
 
 ENV USER=ubuntu
-RUN useradd -rm -d /home/${USER} -s /bin/bash ${USER}
+RUN useradd -rm -d /home/${USER} -s /bin/bash -G root ${USER}
 
 RUN chown -R ${USER}:${USER} /opt/musicdaemon
+RUN chown -R ${USER}:${USER} /srv/media
 
 #COPY ./requirement.txt /opt/musicdaemon/
 
 # Uncomment when production
 #RUN python3 -m pip install --no-cache-dir -r requirement.txt
+
+ENV FUSE none
+
+ENV MOUNT_POINT /mnt
+
+# ignore when FUSE is none
+ENV BUCKET ""
+
+# using when FUSE is gcs
+ENV GOOGLE_APPLICATION_CREDENTIALS /etc/gcloud/service-account-key.json
+
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates wget \
+  && echo "deb http://packages.cloud.google.com/apt cloud-sdk-xenial main" | tee /etc/apt/sources.list.d/google-cloud.sdk.list \
+  && echo "deb http://packages.cloud.google.com/apt gcsfuse-xenial main" | tee /etc/apt/sources.list.d/gcsfuse.list \
+  && wget -qO- https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - \
+  && apt-get update && apt-get install -y --no-install-recommends google-cloud-sdk gcsfuse \
+  && echo 'user_allow_other' > /etc/fuse.conf \
+  && rm -rf /var/lib/apt/lists
+
+RUN mkdir -p /etc/gcloud
 
 USER ${USER}
 
