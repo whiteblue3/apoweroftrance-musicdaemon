@@ -80,6 +80,14 @@ class MusicDaemon:
     def now(self, tz=tzlocal()):
         return datetime.now(tz=tz).isoformat()
 
+    def shift(self, lst):
+        tmp = lst[0]
+
+        for i in range(1, len(lst)):
+            lst[i - 1] = lst[i]
+
+        lst[len(lst) - 1] = tmp
+
     def main(self):
         self.logger.log('start', {
             'pid': os.getpid()
@@ -132,6 +140,7 @@ class MusicDaemon:
                 if is_streaming is False:
                     if len(self.PLAYLIST) > 0:
                         try:
+                            self.shift(self.PLAYLIST)
                             self.now_playing = self.PLAYLIST.pop()
                             self.playlist = self.PLAYLIST
 
@@ -204,6 +213,7 @@ class MusicDaemon:
     def on_startup_event(self, resp):
         try:
             data = json.loads(resp)
+            self.logger.log('on_startup', data)
             self.process_setlist(data)
         except Exception as e:
             self.logger.log('on_startup_error', str(e))
@@ -224,6 +234,7 @@ class MusicDaemon:
             self.logger.log('on_stop_error', str(e))
 
     async def request(self, method, url, callback, data=None):
+        headers = {'content-type': 'application/json'}
         async with aiohttp.ClientSession() as session:
             if method == "GET":
                 if data is not None:
@@ -231,11 +242,11 @@ class MusicDaemon:
                     request_url = "{0}?{1}".format(url, query_string)
                 else:
                     request_url = url
-                async with session.get(request_url) as resp:
+                async with session.get(request_url, headers=headers) as resp:
                     response = await resp.read()
                     callback(response)
             elif method == "POST":
-                async with session.post(url, data=data) as resp:
+                async with session.post(url, data=data, headers=headers) as resp:
                     response = await resp.read()
                     callback(response)
 
