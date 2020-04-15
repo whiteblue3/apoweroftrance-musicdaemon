@@ -16,5 +16,13 @@ cd /opt/musicdaemon
 # Comment when production
 python3 -m pip install -r requirement.txt
 
+# Wait for depends service
+if [[ ${WAIT_SERVICE} == *"1"* ]]; then
+  while ! nc ${WAIT_URL} ${WAIT_PORT}; do
+    >&2 echo "Wait depends service - sleeping"
+    sleep 1
+  done
+fi
+
 python3 /opt/musicdaemon/main.py
 exec "$@"

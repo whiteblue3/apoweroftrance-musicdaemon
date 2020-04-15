@@ -207,8 +207,11 @@ class MusicDaemon:
             asyncio.run(asyncio.wait(tasks))
         else:
             futures = [self.request(method, url, callback, data)]
-            loop = asyncio.get_event_loop()
+            # loop = asyncio.get_event_loop()
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
             loop.run_until_complete(asyncio.wait(futures))
+            loop.close()
 
     def on_startup_event(self, resp):
         try:

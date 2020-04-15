@@ -57,6 +57,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 
 RUN mkdir -p /etc/gcloud
 
+ENV WAIT_SERVICE 0
+ENV WAIT_URL "127.0.0.1"
+ENV WAIT_PORT 8090
+RUN apt-get update && apt-get install netcat-openbsd -y
+
 USER ${USER}
 
 CMD ["./startup.sh"]
