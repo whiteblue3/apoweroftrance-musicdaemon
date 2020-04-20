@@ -36,14 +36,10 @@ class MusicDaemon:
         self.logger = Logger(MusicDaemon.__name__, name)
 
         ns_object = {
-            "now_playing": {
-                "artist": None,
-                "title": None,
-                "location": None
-            },
-            "playlist": []
+            "now_playing": None,
+            "playlist": None
         }
-        setattr(ns, name, ns_object)
+        setattr(ns, name, dict(ns_object))
 
         try:
             self.icecast2_config = ns_config.icecast2[name]
@@ -188,13 +184,13 @@ class MusicDaemon:
         else:
             self.logger.log('icecast2', "icecast2 server connected")
 
-            # if (
-            #     self.on_startup_callback is None or
-            #     self.on_startup_callback is ""
-            # ):
-            #     pass
-            # else:
-            #     self.request_callback("GET", self.on_startup_callback, self.on_startup_event)
+            if (
+                self.on_startup_callback is None or
+                self.on_startup_callback is ""
+            ):
+                pass
+            else:
+                self.request_callback("GET", self.on_startup_callback, self.on_startup_event)
 
         is_streaming = False
         f = None
@@ -241,6 +237,9 @@ class MusicDaemon:
                             is_streaming = True
                     else:
                         is_streaming = False
+                        if f is not None:
+                            self.now_playing = None
+                            self.set_redis_data("now_playing", None)
                         self.set_redis_data("playlist", None)
                 else:
                     chunk = f.read(4096)
