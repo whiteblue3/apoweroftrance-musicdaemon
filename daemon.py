@@ -73,6 +73,7 @@ class MusicDaemon:
     def __del__(self):
         pass
 
+    # now_playing for ns
     @property
     def now_playing(self):
         return get_ns_obj(self.name, "now_playing")
@@ -239,6 +240,7 @@ class MusicDaemon:
                         else:
                             is_streaming = True
                     else:
+                        is_streaming = False
                         self.set_redis_data("playlist", None)
                 else:
                     chunk = f.read(4096)
@@ -343,7 +345,7 @@ class MusicDaemon:
         for queue in data:
             is_no_error = self.validate_queue(queue)
 
-        if is_no_error or len(data) == 0:
+        if is_no_error:
             self.set_PLAYLIST(data)
 
     def validate_queue(self, queue):
