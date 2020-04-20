@@ -188,13 +188,13 @@ class MusicDaemon:
         else:
             self.logger.log('icecast2', "icecast2 server connected")
 
-            if (
-                self.on_startup_callback is None or
-                self.on_startup_callback is ""
-            ):
-                pass
-            else:
-                self.request_callback("GET", self.on_startup_callback, self.on_startup_event)
+            # if (
+            #     self.on_startup_callback is None or
+            #     self.on_startup_callback is ""
+            # ):
+            #     pass
+            # else:
+            #     self.request_callback("GET", self.on_startup_callback, self.on_startup_event)
 
         is_streaming = False
         f = None
@@ -285,7 +285,8 @@ class MusicDaemon:
         try:
             data = json.loads(resp)
             self.logger.log('on_startup', data)
-            self.process_setlist(data)
+            if not self.redis_server:
+                self.process_setlist(data)
         except Exception as e:
             self.logger.log('on_startup_error', str(e))
 
@@ -300,7 +301,8 @@ class MusicDaemon:
         try:
             data = json.loads(resp)
             self.logger.log('on_stop', data)
-            self.process_queue(data)
+            if not self.redis_server:
+                self.process_queue(data)
         except Exception as e:
             self.logger.log('on_stop_error', str(e))
 
