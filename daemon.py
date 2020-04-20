@@ -35,37 +35,6 @@ class MusicDaemon:
         self.__stop = False
         self.logger = Logger(MusicDaemon.__name__, name)
 
-        ns_object = {
-            "now_playing": None,
-            "playlist": None
-        }
-        setattr(ns, name, dict(ns_object))
-
-        try:
-            self.icecast2_config = ns_config.icecast2[name]
-        except KeyError:
-            pass
-
-        self.logger.log("icecast2_config", self.icecast2_config)
-
-        try:
-            self.callback_config = ns_config.callback[name]
-        except KeyError:
-            pass
-        else:
-            self.on_startup_callback = self.callback_config["on_startup"]
-            self.on_play_callback = self.callback_config["on_play"]
-            self.on_stop_callback = self.callback_config["on_stop"]
-
-            self.logger.log("callback_config", self.callback_config)
-
-        try:
-            self.redis_config = ns_config.redis[name]
-        except KeyError:
-            pass
-        else:
-            self.logger.log("redis_config", self.redis_config)
-
     def __del__(self):
         pass
 
@@ -147,6 +116,37 @@ class MusicDaemon:
         self.logger.log('start', {
             'pid': os.getpid()
         })
+
+        ns_object = {
+            "now_playing": None,
+            "playlist": None
+        }
+        setattr(ns, self.name, dict(ns_object))
+
+        try:
+            self.icecast2_config = ns_config.icecast2[self.name]
+        except KeyError:
+            pass
+
+        self.logger.log("icecast2_config", self.icecast2_config)
+
+        try:
+            self.callback_config = ns_config.callback[self.name]
+        except KeyError:
+            pass
+        else:
+            self.on_startup_callback = self.callback_config["on_startup"]
+            self.on_play_callback = self.callback_config["on_play"]
+            self.on_stop_callback = self.callback_config["on_stop"]
+
+            self.logger.log("callback_config", self.callback_config)
+
+        try:
+            self.redis_config = ns_config.redis[self.name]
+        except KeyError:
+            pass
+        else:
+            self.logger.log("redis_config", self.redis_config)
 
         if self.redis_config is not None:
             redis_host = self.redis_config["host"]
