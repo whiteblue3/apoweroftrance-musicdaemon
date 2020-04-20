@@ -184,13 +184,23 @@ class MusicDaemon:
         else:
             self.logger.log('icecast2', "icecast2 server connected")
 
-            if (
-                self.on_startup_callback is None or
-                self.on_startup_callback is ""
-            ):
-                pass
-            else:
-                self.request_callback("GET", self.on_startup_callback, self.on_startup_event)
+            if self.redis_server:
+                redis_data = self.get_redis_data()
+
+                if redis_data:
+                    if redis_data["now_playing"] is not None:
+                        self.now_playing = redis_data["now_playing"]
+                    if redis_data["playlist"]:
+                        self.set_PLAYLIST(redis_data["playlist"])
+
+            if not self.get_PLAYLIST():
+                if (
+                    self.on_startup_callback is None or
+                    self.on_startup_callback is ""
+                ):
+                    pass
+                else:
+                    self.request_callback("GET", self.on_startup_callback, self.on_startup_event)
 
         is_streaming = False
         f = None
@@ -203,8 +213,10 @@ class MusicDaemon:
                     if self.get_PLAYLIST():
                         try:
                             playlist = self.get_PLAYLIST()
-                            self.now_playing = playlist.pop(0)
-                            self.set_PLAYLIST(playlist)
+
+                            if not self.now_playing:
+                                self.now_playing = playlist.pop(0)
+                                self.set_PLAYLIST(playlist)
 
                             if self.redis_server is not None:
                                 self.set_redis_data("now_playing", self.now_playing)
