@@ -1,7 +1,7 @@
 #!/bin/bash
 
 APP_NAME=musicdaemon
-VERSION=0.0.3
+VERSION=0.0.5
 
 docker build -t ${APP_NAME}:${VERSION} .
 docker tag ${APP_NAME}:${VERSION} gcr.io/apoweroftrance/${APP_NAME}:${VERSION}

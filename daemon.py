@@ -4,6 +4,7 @@ import shout
 import json
 import asyncio
 import aiohttp
+import redis
 from urllib.parse import urlencode
 from datetime import datetime
 from dateutil.tz import tzlocal
@@ -14,15 +15,20 @@ from logger import Logger
 
 class MusicDaemon:
     name = None
+
+    redis_server = None
+    redis_daemon_key = None
+
     icecast2_config = None
     callback_config = None
+    redis_config = None
 
     on_startup_callback = None
     on_play_callback = None
     on_stop_callback = None
 
     # Local playlist
-    PLAYLIST = []
+    _PLAYLIST = []
 
     def __init__(self, name):
         self.name = name
@@ -50,12 +56,19 @@ class MusicDaemon:
             self.callback_config = ns_config.callback[name]
         except KeyError:
             pass
+        else:
+            self.on_startup_callback = self.callback_config["on_startup"]
+            self.on_play_callback = self.callback_config["on_play"]
+            self.on_stop_callback = self.callback_config["on_stop"]
 
-        self.on_startup_callback = self.callback_config["on_startup"]
-        self.on_play_callback = self.callback_config["on_play"]
-        self.on_stop_callback = self.callback_config["on_stop"]
+            self.logger.log("callback_config", self.callback_config)
 
-        self.logger.log("callback_config", self.callback_config)
+        try:
+            self.redis_config = ns_config.redis[name]
+        except KeyError:
+            pass
+        else:
+            self.logger.log("redis_config", self.redis_config)
 
     def __del__(self):
         pass
@@ -77,21 +90,73 @@ class MusicDaemon:
     def playlist(self, value):
         set_ns_obj(self.name, "playlist", value)
 
+    def get_PLAYLIST(self):
+        if self.redis_server is None:
+            return self._PLAYLIST
+        else:
+            redis_data = self.get_redis_data()
+            if redis_data and redis_data["playlist"]:
+                self.playlist = list(redis_data["playlist"])
+                return redis_data["playlist"]
+            else:
+                return None
+
+    def set_PLAYLIST(self, value):
+        if self.redis_server is None:
+            self._PLAYLIST = value
+            self.playlist = value
+        else:
+            self.playlist = value
+            self.set_redis_data("playlist", value)
+
     def now(self, tz=tzlocal()):
         return datetime.now(tz=tz).isoformat()
 
-    def shift(self, lst):
-        tmp = lst[0]
+    def get_redis_data(self):
+        raw_json = self.redis_server.get(self.redis_daemon_key)
+        if raw_json is None:
+            default_data = {
+                "now_playing": None,
+                "playlist": None
+            }
+            self.redis_server.set(self.redis_daemon_key, json.dumps(default_data, ensure_ascii=False).encode('utf-8'))
+        try:
+            data_json = json.loads(raw_json)
+        except Exception as e:
+            self.logger.log('redis error', "{}".format(e))
+            return None
+        return dict(data_json)
 
-        for i in range(1, len(lst)):
-            lst[i - 1] = lst[i]
+    def set_redis_data(self, key, value):
+        redis_data = self.get_redis_data()
+        redis_data[key] = value
+        self.redis_server.set(self.redis_daemon_key, json.dumps(redis_data, ensure_ascii=False).encode('utf-8'))
 
-        lst[len(lst) - 1] = tmp
+    def stop_send_music(self, now_playing):
+        if (
+                self.on_stop_callback is None or
+                self.on_stop_callback is ""
+        ):
+            pass
+        else:
+            self.request_callback(
+                "POST", self.on_stop_callback, self.on_stop_event, json.dumps(now_playing)
+            )
+
+        self.now_playing = None
+        self.set_redis_data("now_playing", None)
 
     def main(self):
         self.logger.log('start', {
             'pid': os.getpid()
         })
+
+        if self.redis_config is not None:
+            redis_host = self.redis_config["host"]
+            redis_port = int(self.redis_config["port"])
+            self.redis_daemon_key = self.redis_config["key"]
+
+            self.redis_server = redis.StrictRedis(host=redis_host, port=redis_port, db=0)
 
         s = shout.Shout()
 
@@ -138,11 +203,14 @@ class MusicDaemon:
 
             if is_connected is True:
                 if is_streaming is False:
-                    if len(self.PLAYLIST) > 0:
+                    if self.get_PLAYLIST():
                         try:
-                            self.shift(self.PLAYLIST)
-                            self.now_playing = self.PLAYLIST.pop()
-                            self.playlist = self.PLAYLIST
+                            playlist = self.get_PLAYLIST()
+                            self.now_playing = playlist.pop(0)
+                            self.set_PLAYLIST(playlist)
+
+                            if self.redis_server is not None:
+                                self.set_redis_data("now_playing", self.now_playing)
 
                             filename = str(self.now_playing["location"])
                             s.set_metadata(
@@ -164,32 +232,30 @@ class MusicDaemon:
                             continue
                         except FileNotFoundError as e:
                             self.now_playing = None
+                            self.set_redis_data("now_playing", None)
                             is_streaming = False
                             self.logger.log('streaming', "{}".format(e))
                             continue
                         else:
                             is_streaming = True
+                    else:
+                        self.set_redis_data("playlist", None)
                 else:
                     chunk = f.read(4096)
                     if not chunk:
                         is_streaming = False
                         f.close()
 
-                        if (
-                            self.on_stop_callback is None or
-                            self.on_stop_callback is ""
-                        ):
-                            pass
-                        else:
-                            self.request_callback(
-                                "POST", self.on_stop_callback, self.on_stop_event, json.dumps(self.now_playing)
-                            )
-
-                        self.now_playing = None
-
+                        self.stop_send_music(self.now_playing)
                     else:
-                        s.send(chunk)
-                        s.sync()
+                        try:
+                            s.send(chunk)
+                            s.sync()
+                        except shout.ShoutException:
+                            is_streaming = False
+                            f.close()
+
+                            self.stop_send_music(self.now_playing)
 
         s.close()
 
@@ -256,8 +322,9 @@ class MusicDaemon:
     def process_queue(self, data):
         is_no_error = self.validate_queue(data)
         if is_no_error:
-            self.playlist.append(data)
-            self.PLAYLIST.append(data)
+            playlist = self.get_PLAYLIST()
+            playlist.append(data)
+            self.set_PLAYLIST(playlist)
             self.logger.log('QUEUE', data)
 
     def process_unqueue(self, data):
@@ -266,8 +333,9 @@ class MusicDaemon:
         except KeyError as e:
             self.logger.log('error', str(e))
         else:
-            self.playlist.pop(index_at)
-            self.PLAYLIST.pop(index_at)
+            playlist = self.get_PLAYLIST()
+            playlist.pop(index_at)
+            self.set_PLAYLIST(playlist)
             self.logger.log('UNQUEUE', {"index_at": index_at})
 
     def process_setlist(self, data):
@@ -276,9 +344,7 @@ class MusicDaemon:
             is_no_error = self.validate_queue(queue)
 
         if is_no_error or len(data) == 0:
-            self.playlist = data
-            self.PLAYLIST = data
-            self.logger.log('SETLIST', self.playlist)
+            self.set_PLAYLIST(data)
 
     def validate_queue(self, queue):
         is_no_error = False

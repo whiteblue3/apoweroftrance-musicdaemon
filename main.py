@@ -51,6 +51,7 @@ if __name__ == '__main__':
 
     icecast2_config = {}
     callback_config = {}
+    redis_config = {}
     for daemon in musicdaemon:
         try:
             icecast2_daemon_config = config.options("icecast2_{0}".format(daemon))
@@ -70,8 +71,18 @@ if __name__ == '__main__':
         except NoSectionError:
             pass
 
+        try:
+            redis_daemon_config = config.options("redis_{0}".format(daemon))
+            redis_config[daemon] = {}
+
+            for key in redis_daemon_config:
+                redis_config[daemon][key] = config.get("redis_{0}".format(daemon), key)
+        except NoSectionError:
+            pass
+
     ns_config.icecast2 = icecast2_config
     ns_config.callback = callback_config
+    ns_config.redis = redis_config
 
     process_list = []
     if musicdaemon:

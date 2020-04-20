@@ -62,6 +62,9 @@ ENV WAIT_URL "127.0.0.1"
 ENV WAIT_PORT 8090
 RUN apt-get update && apt-get install netcat-openbsd -y
 
+ENV REDIS_URL "127.0.0.1"
+ENV REDIS_PORT 6379
+
 USER ${USER}
 
-CMD ["./startup.sh"]
+ENTRYPOINT ["./startup.sh"]

@@ -1,5 +1,5 @@
 python-shout
 aiohttp
-
+redis
 pytz
 python-dateutil
