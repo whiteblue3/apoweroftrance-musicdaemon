@@ -70,7 +70,7 @@ This section is configure daemon
 
 ## icecast2 section
 
-    [icecast2_yui]
+    [icecast2_default]
     host = 127.0.0.1
     port = 8000
     mount = default
@@ -85,6 +85,18 @@ This section is configure daemon
 
 This section is configure ICECAST2.
 The name of section must format of 'icecast_[daemon name in daemon section]'
+
+## Redis section
+
+    [redis_default]
+    host =
+    port =
+    key =
+
+This section is configure redis.
+The name of section must format of 'redis_[daemon name in daemon section]'
+'key' is used for store now playing, playlist via JSON format. 
+In generally configure as same with deamon name
 
 ## callback section
 
