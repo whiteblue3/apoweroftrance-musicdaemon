@@ -249,15 +249,12 @@ class MusicDaemon:
                             is_streaming = True
                     else:
                         is_streaming = False
-                        if f is not None:
-                            self.now_playing = None
-                            self.set_redis_data("now_playing", None)
-                        self.set_redis_data("playlist", None)
                 else:
                     chunk = f.read(4096)
                     if not chunk:
                         is_streaming = False
                         f.close()
+                        f = None
 
                         self.stop_send_music(self.now_playing)
                     else:
@@ -267,6 +264,7 @@ class MusicDaemon:
                         except shout.ShoutException:
                             is_streaming = False
                             f.close()
+                            f = None
 
                             self.stop_send_music(self.now_playing)
 
