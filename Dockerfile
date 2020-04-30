@@ -6,8 +6,6 @@ COPY ./service/musicdaemon.service /etc/systemd/system/
 RUN chmod a+x /etc/systemd/system/musicdaemon.service
 
 RUN mkdir /opt/musicdaemon
-# Uncomment when production
-#COPY . /opt/musicdaemon/
 WORKDIR /opt/musicdaemon
 
 RUN apt-get update && apt-get install --no-install-recommends -y vim gnupg curl \
@@ -31,11 +29,6 @@ RUN useradd -rm -d /home/${USER} -s /bin/bash -G root ${USER}
 
 RUN chown -R ${USER}:${USER} /opt/musicdaemon
 RUN chown -R ${USER}:${USER} /srv/media
-
-#COPY ./requirement.txt /opt/musicdaemon/
-
-# Uncomment when production
-#RUN python3 -m pip install --no-cache-dir -r requirement.txt
 
 ENV FUSE none
 
@@ -63,5 +56,10 @@ ENV WAIT_PORT 8090
 RUN apt-get update && apt-get install netcat-openbsd -y
 
 USER ${USER}
+
+# Uncomment when production
+#COPY . /opt/musicdaemon/
+#COPY ./requirement.txt /opt/musicdaemon/
+#RUN python3 -m pip install --no-cache-dir -r requirement.txt
 
 ENTRYPOINT ["./startup.sh"]
