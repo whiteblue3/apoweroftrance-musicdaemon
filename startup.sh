@@ -3,7 +3,6 @@ set -e
 set -x
 
 if [[ ${FUSE} == *"gcs"* ]]; then
-  gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
   gcsfuse --key-file=${GOOGLE_APPLICATION_CREDENTIALS} -o nonempty -o allow_other --implicit-dirs ${BUCKET} /srv/media
 elif [[ ${FUSE} == *"s3"* ]]; then
   echo "S3 does not support currently"
@@ -13,10 +12,10 @@ fi
 
 cd /opt/musicdaemon
 
-# Comment when production
+## Dev only
 #python3 -m pip install -r requirement.txt
-#
-## Wait for depends service
+
+## Comment when production
 #if [[ ${WAIT_SERVICE} == *"1"* ]]; then
 #  while ! nc ${WAIT_URL} ${WAIT_PORT}; do
 #    >&2 echo "Wait depends service - sleeping"

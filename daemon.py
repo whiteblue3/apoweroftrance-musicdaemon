@@ -245,6 +245,12 @@ class MusicDaemon:
                             is_streaming = False
                             self.logger.log('streaming', "{}".format(e))
                             continue
+                        except OSError as e:
+                            self.now_playing = None
+                            self.set_redis_data("now_playing", None)
+                            is_streaming = False
+                            self.logger.log('streaming', "{}".format(e))
+                            continue
                         else:
                             is_streaming = True
                     else:
