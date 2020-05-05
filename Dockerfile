@@ -59,10 +59,16 @@ RUN chown -R ${USER}:${USER} /opt/venv
 RUN chown -R ${USER}:${USER} /opt/musicdaemon
 RUN chown -R ${USER}:${USER} /srv/media
 
+#######################
+# cloud storage mount #
+
+# s3, gcs or none
 ENV FUSE none
 
-ENV MOUNT_POINT /mnt
+# mount point of bucket
+ENV MOUNT_POINT /srv/media
 
+# s3 or gcs bucket
 # ignore when FUSE is none
 ENV BUCKET ""
 
@@ -71,16 +77,31 @@ ENV GOOGLE_APPLICATION_CREDENTIALS /etc/gcloud/service-account-key.json
 
 RUN mkdir -p /etc/gcloud
 
+###########################
+# service depends control #
+
+# if 1, wait to start the depends service is up
 ENV WAIT_SERVICE 0
 ENV WAIT_URL "127.0.0.1"
-ENV WAIT_PORT 8090
+ENV WAIT_PORT 8091
 
-USER ${USER}
+###################
+# startup control #
+
+# pip install when start (dev usally)
+ENV INSTALL 0
+
+# automatic start deamon
+ENV AUTOSTART 1
 
 
+## Uncomment when production
 #FROM deploy AS production
 #MAINTAINER @whiteblue3 https://github.com/whiteblue3
-#
 #COPY . /opt/musicdaemon/
+#RUN chown -R ${USER}:${USER} /opt/musicdaemon/
+#RUN rm requirement.txt && rm Dockerfile && rm build_push_docker_image.sh && rm -rf .git && rm -rf .gitignore \
+#    && rm -rf service
 
+USER ${USER}
 ENTRYPOINT ["./startup.sh"]

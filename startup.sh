@@ -12,16 +12,19 @@ fi
 
 cd /opt/musicdaemon
 
-## Dev only
-#python3 -m pip install -r requirement.txt
+if [[ ${INSTALL} == *"1"* ]]; then
+  python3 -m pip install -r requirement.txt
+fi
 
-## Comment when production
-#if [[ ${WAIT_SERVICE} == *"1"* ]]; then
-#  while ! nc ${WAIT_URL} ${WAIT_PORT}; do
-#    >&2 echo "Wait depends service - sleeping"
-#    sleep 1
-#  done
-#fi
-#
-#python3 /opt/musicdaemon/main.py
+if [[ ${WAIT_SERVICE} == *"1"* ]]; then
+  while ! nc ${WAIT_URL} ${WAIT_PORT}; do
+    >&2 echo "Wait depends service - sleeping"
+    sleep 1
+  done
+fi
+
+if [[ ${AUTOSTART} == *"1"* ]]; then
+  python3 /opt/musicdaemon/main.py
+fi
+
 exec "$@"
