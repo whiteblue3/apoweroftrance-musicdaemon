@@ -95,13 +95,13 @@ ENV INSTALL 0
 ENV AUTOSTART 1
 
 
-## Uncomment when production
-#FROM deploy AS production
-#MAINTAINER @whiteblue3 https://github.com/whiteblue3
-#COPY . /opt/musicdaemon/
-#RUN chown -R ${USER}:${USER} /opt/musicdaemon/
-#RUN rm requirement.txt && rm Dockerfile && rm build_push_docker_image.sh && rm -rf .git && rm -rf .gitignore \
-#    && rm -rf service
+# Uncomment when production
+FROM deploy AS production
+MAINTAINER @whiteblue3 https://github.com/whiteblue3
+COPY . /opt/musicdaemon/
+RUN chown -R ${USER}:${USER} /opt/musicdaemon/
+RUN rm requirement.txt && rm Dockerfile && rm build_push_docker_image.sh && rm -rf .git && rm -rf .gitignore \
+    && rm -rf service
 
 USER ${USER}
 ENTRYPOINT ["./startup.sh"]
