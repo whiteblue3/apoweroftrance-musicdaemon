@@ -1,7 +1,7 @@
 #!/bin/bash
 
 APP_NAME=musicdaemon
-VERSION=0.0.6
+VERSION=0.0.7
 
 docker build --no-cache=True -t ${APP_NAME}:${VERSION} .
 docker tag ${APP_NAME}:${VERSION} gcr.io/apoweroftrance/${APP_NAME}:${VERSION}

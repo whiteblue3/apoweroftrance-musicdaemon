@@ -5,6 +5,7 @@ import json
 import asyncio
 import aiohttp
 import redis
+import time
 from urllib.parse import urlencode
 from datetime import datetime
 from dateutil.tz import tzlocal
@@ -237,6 +238,7 @@ class MusicDaemon:
                                 )
 
                             f = open(filename, 'rb')
+                            time.sleep(1)
                         except IndexError:
                             continue
                         except FileNotFoundError as e:
