@@ -1,5 +1,5 @@
 import signal
-from .shared import ns
+
 
 class Process:
     """Child Process"""

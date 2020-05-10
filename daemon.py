@@ -6,6 +6,7 @@ import asyncio
 import aiohttp
 import redis
 import time
+import signal
 from urllib.parse import urlencode
 from datetime import datetime
 from dateutil.tz import tzlocal
@@ -80,24 +81,31 @@ class MusicDaemon:
         return datetime.now(tz=tz).isoformat()
 
     def get_redis_data(self):
-        raw_json = self.redis_server.get(self.redis_daemon_key)
-        if raw_json is None:
-            default_data = {
-                "now_playing": None,
-                "playlist": None
-            }
-            self.redis_server.set(self.redis_daemon_key, json.dumps(default_data, ensure_ascii=False).encode('utf-8'))
         try:
-            data_json = json.loads(raw_json)
-        except Exception as e:
-            self.logger.log('redis error', "{}".format(e))
+            raw_json = self.redis_server.get(self.redis_daemon_key)
+        except AttributeError as e:
             return None
-        return dict(data_json)
+        else:
+            if raw_json is None:
+                default_data = {
+                    "now_playing": None,
+                    "playlist": None
+                }
+                self.redis_server.set(self.redis_daemon_key, json.dumps(default_data, ensure_ascii=False).encode('utf-8'))
+            try:
+                data_json = json.loads(raw_json)
+            except Exception as e:
+                self.logger.log('redis error', "{}".format(e))
+                return None
+            return dict(data_json)
 
     def set_redis_data(self, key, value):
-        redis_data = self.get_redis_data()
-        redis_data[key] = value
-        self.redis_server.set(self.redis_daemon_key, json.dumps(redis_data, ensure_ascii=False).encode('utf-8'))
+        try:
+            redis_data = self.get_redis_data()
+            redis_data[key] = value
+            self.redis_server.set(self.redis_daemon_key, json.dumps(redis_data, ensure_ascii=False).encode('utf-8'))
+        except TypeError as e:
+            pass
 
     def stop_send_music(self, now_playing):
         if (
@@ -162,6 +170,7 @@ class MusicDaemon:
         s.port = int(self.icecast2_config["port"])
         s.user = self.icecast2_config["user"]
         s.password = self.icecast2_config["password"]
+        # s.password = ""
         s.mount = '/' + self.icecast2_config["mount"]
         s.format = self.icecast2_config["codec"]
         s.protocol = 'http'
@@ -180,8 +189,8 @@ class MusicDaemon:
             s.open()
             self.logger.log('icecast2', "connecting icecast2 server")
         except shout.ShoutException as e:
-            is_connected = False
             self.logger.log('icecast2', "{}".format(e))
+            is_connected = False
         else:
             self.logger.log('icecast2', "icecast2 server connected")
 
@@ -206,10 +215,10 @@ class MusicDaemon:
         is_streaming = False
         f = None
 
-        while not self.__stop:
-            self.loop()
+        if is_connected:
+            while not self.__stop:
+                self.loop()
 
-            if is_connected is True:
                 if is_streaming is False:
                     if self.get_PLAYLIST():
                         try:
@@ -222,71 +231,88 @@ class MusicDaemon:
                             if self.redis_server is not None:
                                 self.set_redis_data("now_playing", self.now_playing)
 
-                            filename = str(self.now_playing["location"])
-                            s.set_metadata(
-                                {'song': "{0} - {1}".format(self.now_playing["artist"], self.now_playing["title"])}
-                            )
-
-                            if (
-                                self.on_play_callback is None or
-                                self.on_play_callback is ""
-                            ):
-                                pass
-                            else:
-                                self.request_callback(
-                                    "POST", self.on_play_callback, self.on_play_event, json.dumps(self.now_playing)
+                            if self.now_playing is not None:
+                                filename = str(self.now_playing["location"])
+                                s.set_metadata(
+                                    {'song': "{0} - {1}".format(self.now_playing["artist"], self.now_playing["title"])}
                                 )
 
-                            f = open(filename, 'rb')
-                            time.sleep(1)
+                                if (
+                                    self.on_play_callback is None or
+                                    self.on_play_callback is ""
+                                ):
+                                    pass
+                                else:
+                                    self.request_callback(
+                                        "POST", self.on_play_callback, self.on_play_event, json.dumps(self.now_playing)
+                                    )
+
+                                f = open(filename, 'rb')
+                        except shout.ShoutException:
+                            self.now_playing = None
+                            self.set_redis_data("now_playing", None)
+                            is_streaming = False
+                            continue
                         except IndexError:
                             continue
                         except FileNotFoundError as e:
                             self.now_playing = None
                             self.set_redis_data("now_playing", None)
                             is_streaming = False
-                            self.logger.log('streaming', "{}".format(e))
+                            self.logger.log('streaming error', "{}".format(e))
                             continue
-                        except OSError as e:
+                        except OSError:
                             self.now_playing = None
                             self.set_redis_data("now_playing", None)
                             is_streaming = False
-                            self.logger.log('streaming', "{}".format(e))
                             continue
                         else:
                             is_streaming = True
                     else:
                         is_streaming = False
                 else:
-                    chunk = f.read(4096)
-                    if not chunk:
+                    try:
+                        chunk = f.read(4096)
+                    except AttributeError as e:
+                        self.now_playing = None
+                        self.set_redis_data("now_playing", None)
                         is_streaming = False
-                        f.close()
-                        f = None
-
-                        self.stop_send_music(self.now_playing)
+                        self.logger.log('streaming error', "{}".format(e))
                     else:
-                        try:
-                            s.send(chunk)
-                            s.sync()
-                        except shout.ShoutException:
+                        if not chunk:
                             is_streaming = False
                             f.close()
                             f = None
 
                             self.stop_send_music(self.now_playing)
+                        else:
+                            try:
+                                s.send(chunk)
+                                s.sync()
+                            except shout.ShoutException:
+                                is_streaming = False
+                                f.close()
+                                f = None
 
-        s.close()
+                                self.stop_send_music(self.now_playing)
 
+        if is_connected:
+            s.close()
+
+        pid = os.getpid()
         self.logger.log('stop', {
-            'pid': os.getpid()
+            'pid': pid
         })
+        os.kill(pid, signal.SIGTERM)
+        os.kill(pid, signal.SIGKILL)
+        # os.system('kill -9 %s' % pid)
         return 0
 
     def stop(self):
         self.__stop = True
 
     def request_callback(self, method, url, callback, data=None):
+        time.sleep(1)
         if sys.version_info >= (3, 7):
             tasks = [self.request(method, url, callback, data)]
             asyncio.run(asyncio.wait(tasks))

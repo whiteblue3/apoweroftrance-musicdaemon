@@ -1,9 +1,9 @@
 import os
 import time
 import signal
+import psutil
 from logger import Logger
 from process.process import Process
-from process.shared import cmd_queue
 
 
 class Master:
@@ -17,7 +17,8 @@ class Master:
         self.num_process = len(self.child_process)
 
     def main(self):
-        self.logger.log("start", "Start Master, PID {0}".format(os.getpid()))
+        master_pid = os.getpid()
+        self.logger.log("start", "Start Master, PID {0}".format(master_pid))
 
         signal.signal(signal.SIGINT, self.stop)
         signal.signal(signal.SIGTERM, self.stop)
@@ -43,6 +44,22 @@ class Master:
             process_class_index += 1
 
         while not self.__stop:
+            # os.system("ps aux | awk '{ print $8 " " $2 }' | grep -w Z")
+            for proc in psutil.process_iter():
+                try:
+                    pinfo = proc.as_dict(attrs=['pid'])
+                    for p in self.process:
+                        if pinfo['pid'] == p['pid']:
+                            # print(p['name'], proc.status())
+                            if proc.status() == "zombie":
+                                proc.kill()
+                                self.process.pop(self.process.index(p))
+                            # else:
+                            #     print(p['name'], proc.status())
+                except psutil.NoSuchProcess:
+                    pass
+            if len(self.process) == 1 and self.process[0]['name'] == 'server':
+                self.stop(signal.SIGINT, 0)
             time.sleep(1)
 
         self.logger.log("stop", "Stop Master, PID {0}".format(os.getpid()))

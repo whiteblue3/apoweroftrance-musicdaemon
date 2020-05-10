@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import signal
 # from dateutil.parser import parse
 from socketserver import ThreadingMixIn
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -235,8 +236,12 @@ class TCPServer:
     def stop(self):
         self.__stop = True
 
+        pid = os.getpid()
         self.logger.log('stop', {
-            'pid': os.getpid(),
+            'pid': pid,
             'message': 'Stopping HTTP Server...\n'
         })
         self.httpd.shutdown()
+        os.kill(pid, signal.SIGTERM)
+        os.kill(pid, signal.SIGKILL)
+        # os.system('kill -9 %s' % pid)

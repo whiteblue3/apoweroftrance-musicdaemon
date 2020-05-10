@@ -12,6 +12,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential software-properties-common gcc libshout3-dev \
     && python3 -m pip install --upgrade pip setuptools wheel \
     && python3 -m pip install --no-cache-dir python-shout \
+    && python3 -m pip install --no-cache-dir psutil \
     && python3 -m pip install --no-cache-dir -r requirement.txt \
     && apt-get remove --purge -y build-essential software-properties-common \
     && apt-get -y autoremove \
