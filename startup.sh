@@ -21,6 +21,7 @@ if [[ ${WAIT_SERVICE} == *"1"* ]]; then
     >&2 echo "Wait depends service - sleeping"
     sleep 1
   done
+  sleep 3
 fi
 
 if [[ ${AUTOSTART} == *"1"* ]]; then
