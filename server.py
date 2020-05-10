@@ -36,7 +36,12 @@ class TCPHandler(BaseHTTPRequestHandler):
 
         target = str(self.path)[1:]
 
-        if target == "" or not hasattr(ns, target):
+        if target == "":
+            self._set_response(200)
+            self.wfile.write("OK".encode('utf-8'))
+            return
+
+        if not hasattr(ns, target):
             self._set_response(400)
             response = {
                 'error': 'no target'
