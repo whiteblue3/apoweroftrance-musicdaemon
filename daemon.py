@@ -109,8 +109,8 @@ class MusicDaemon:
 
     def stop_send_music(self, now_playing):
         if (
-                self.on_stop_callback is None or
-                self.on_stop_callback is ""
+            self.on_stop_callback is None or
+            self.on_stop_callback is ""
         ):
             pass
         else:
@@ -250,23 +250,22 @@ class MusicDaemon:
                                     )
 
                                 f = open(filename, 'rb')
-                        except shout.ShoutException:
-                            self.now_playing = None
-                            self.set_redis_data("now_playing", None)
+                        except shout.ShoutException as e:
                             is_streaming = False
+                            self.stop_send_music(self.now_playing)
+                            self.logger.log('play error', "{}".format(e))
                             continue
                         except IndexError:
                             continue
                         except FileNotFoundError as e:
-                            self.now_playing = None
-                            self.set_redis_data("now_playing", None)
                             is_streaming = False
-                            self.logger.log('streaming error', "{}".format(e))
+                            self.stop_send_music(self.now_playing)
+                            self.logger.log('play error', "{}".format(e))
                             continue
-                        except OSError:
-                            self.now_playing = None
-                            self.set_redis_data("now_playing", None)
+                        except OSError as e:
                             is_streaming = False
+                            self.stop_send_music(self.now_playing)
+                            self.logger.log('play error', "{}".format(e))
                             continue
                         else:
                             is_streaming = True
@@ -276,9 +275,18 @@ class MusicDaemon:
                     try:
                         chunk = f.read(4096)
                     except AttributeError as e:
-                        self.now_playing = None
-                        self.set_redis_data("now_playing", None)
                         is_streaming = False
+                        f.close()
+                        f = None
+
+                        self.stop_send_music(self.now_playing)
+                        self.logger.log('streaming error', "{}".format(e))
+                    except OSError as e:
+                        is_streaming = False
+                        f.close()
+                        f = None
+
+                        self.stop_send_music(self.now_playing)
                         self.logger.log('streaming error', "{}".format(e))
                     else:
                         if not chunk:
@@ -291,12 +299,13 @@ class MusicDaemon:
                             try:
                                 s.send(chunk)
                                 s.sync()
-                            except shout.ShoutException:
+                            except shout.ShoutException as e:
                                 is_streaming = False
                                 f.close()
                                 f = None
 
                                 self.stop_send_music(self.now_playing)
+                                self.logger.log('streaming error', "{}".format(e))
 
         if is_connected:
             s.close()
