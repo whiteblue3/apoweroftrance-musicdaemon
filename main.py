@@ -1,4 +1,4 @@
-import ast
+# import ast
 import argparse
 from configparser import ConfigParser, NoSectionError
 from process.master import Master
@@ -19,6 +19,7 @@ class Child:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="A Power of Trance Music Daemon")
     parser.add_argument("--config", required=False, help="Config file")
+    # parser.add_argument("--storage", required=False, help="Storage Path")
 
     args = parser.parse_args()
 
@@ -26,6 +27,11 @@ if __name__ == '__main__':
         config_file = "config.ini"
     else:
         config_file = args.config
+
+    # if args.storage is None:
+    #     storage_path = "/srv/media"
+    # else:
+    #     storage_path = args.storage
 
     config = ConfigParser()
     config.read(config_file)
@@ -83,6 +89,7 @@ if __name__ == '__main__':
     ns_config.icecast2 = icecast2_config
     ns_config.callback = callback_config
     ns_config.redis = redis_config
+    # ns_config.storage = storage_path
 
     process_list = []
     if musicdaemon:

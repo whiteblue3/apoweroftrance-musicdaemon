@@ -7,6 +7,8 @@ import aiohttp
 import redis
 import time
 import signal
+from os import listdir
+# from os.path import isfile, join
 from urllib.parse import urlencode
 from datetime import datetime
 from dateutil.tz import tzlocal
@@ -31,6 +33,8 @@ class MusicDaemon:
 
     # Local playlist
     _PLAYLIST = []
+
+    media_dir = "/srv/media"
 
     def __init__(self, name):
         self.name = name
@@ -122,6 +126,15 @@ class MusicDaemon:
         self.now_playing = None
         self.set_redis_data("now_playing", None)
 
+    def get_is_empty_media_dir(self):
+        media_dir = self.media_dir
+        try:
+            _ = listdir(media_dir)
+        except OSError:
+            return True
+        else:
+            return False
+
     def main(self):
         self.logger.log('start', {
             'pid': os.getpid()
@@ -132,6 +145,8 @@ class MusicDaemon:
             "playlist": None
         }
         setattr(ns, self.name, dict(ns_object))
+
+        # self.media_dir = ns_config.storage
 
         try:
             self.icecast2_config = ns_config.icecast2[self.name]
@@ -300,12 +315,14 @@ class MusicDaemon:
                                 s.send(chunk)
                                 s.sync()
                             except shout.ShoutException as e:
-                                is_streaming = False
-                                f.close()
-                                f = None
-
-                                self.stop_send_music(self.now_playing)
-                                self.logger.log('streaming error', "{}".format(e))
+                                s.close()
+                                s.open()
+                                # is_streaming = False
+                                # f.close()
+                                # f = None
+                                #
+                                # self.stop_send_music(self.now_playing)
+                                # self.logger.log('streaming error', "{}".format(e))
 
         if is_connected:
             s.close()

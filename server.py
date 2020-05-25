@@ -2,15 +2,26 @@ import sys
 import os
 import json
 import signal
+# from os import listdir
+# from os.path import isfile, join
 # from dateutil.parser import parse
 from socketserver import ThreadingMixIn
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from commands import CMD, COMMAND_LIST, QUEUE, UNQUEUE, SETLIST
-from process.shared import ns, cmd_queue, get_ns_obj
+from process.shared import ns, cmd_queue, get_ns_obj, ns_config
 from logger import Logger
 
 
 class TCPHandler(BaseHTTPRequestHandler):
+    # def get_is_empty_media_dir(self):
+    #     media_dir = self.server.media_dir
+    #     try:
+    #         _ = listdir(media_dir)
+    #     except OSError:
+    #         return True
+    #     else:
+    #         return False
+
     def log_message(self, format, *args):
         sys.stderr.write("%s - - [%s] %s\n" %
                          (self.address_string(),
@@ -34,6 +45,11 @@ class TCPHandler(BaseHTTPRequestHandler):
         self.log_message("GET request,\nPath: %s\nHeaders:\n%s\n", str(self.path), str(self.headers))
         # self._set_response()
         # self.wfile.write("GET request for {}".format(self.path).encode('utf-8'))
+
+        # if self.get_is_empty_media_dir():
+        #     self._set_response(500)
+        #     self.wfile.write("Storage is Empty".encode('utf-8'))
+        #     return
 
         target = str(self.path)[1:]
 
@@ -68,6 +84,11 @@ class TCPHandler(BaseHTTPRequestHandler):
         self.log_message("POST request,\nPath: %s\nHeaders:\n%s\n\nBody:\n%s\n",
                          str(self.path), str(self.headers), post_data.decode('utf-8'))
 
+        # if self.get_is_empty_media_dir():
+        #     self._set_response(500)
+        #     self.wfile.write("Storage is Empty".encode('utf-8'))
+        #     return
+
         # request_path = str(self.path)
         data = json.loads(post_data.decode('utf-8'))
 
@@ -78,7 +99,7 @@ class TCPHandler(BaseHTTPRequestHandler):
         target = data["target"]
         if target is None or target is "":
             self._set_response(400)
-            self.wfile.write("{'error': 'no target'}")
+            self.wfile.write("{'error': 'no target'}".encode('utf-8'))
             return
 
         command = data["command"]
@@ -89,23 +110,23 @@ class TCPHandler(BaseHTTPRequestHandler):
             command not in COMMAND_LIST
         ):
             self._set_response(400)
-            self.wfile.write("{'error': 'bad request'}")
+            self.wfile.write("{'error': 'bad request'}".encode('utf-8'))
             return
 
         if command == QUEUE:
             if self.validate_queue_command(data) is False:
                 self._set_response(400)
-                self.wfile.write("{'error': 'Request is invalid queue command'}")
+                self.wfile.write("{'error': 'Request is invalid queue command'}".encode('utf-8'))
                 return
         elif command == UNQUEUE:
             if self.validate_unqueue_command(data) is False:
                 self._set_response(400)
-                self.wfile.write("{'error': 'Request is invalid unqueue command'}")
+                self.wfile.write("{'error': 'Request is invalid unqueue command'}".encode('utf-8'))
                 return
         elif command == SETLIST:
             if self.validate_setlist_command(data) is False:
                 self._set_response(400)
-                self.wfile.write("{'error': 'Request is invalid setlist command'}")
+                self.wfile.write("{'error': 'Request is invalid setlist command'}".encode('utf-8'))
                 return
 
         cmd = CMD(host=host, target=target, command=command, data=payload)
@@ -210,6 +231,8 @@ class TCPServer:
     httpd = None
     __stop = False
 
+    media_dir = "/srv/media"
+
     def __init__(self, name):
         self.name = name
         self.__stop = False
@@ -226,6 +249,9 @@ class TCPServer:
         })
         self.httpd.logger = self.logger
         self.httpd.name = self.name
+
+        # self.media_dir = ns_config.storage
+        # self.httpd.media_dir = self.media_dir
 
         while not self.__stop:
             sys.stdout.flush()
