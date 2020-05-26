@@ -84,6 +84,26 @@ class MusicDaemon:
     def now(self, tz=tzlocal()):
         return datetime.now(tz=tz).isoformat()
 
+    def configure_shout(self, s):
+        s.host = self.icecast2_config["host"]
+        s.port = int(self.icecast2_config["port"])
+        s.user = self.icecast2_config["user"]
+        s.password = self.icecast2_config["password"]
+        # s.password = ""
+        s.mount = '/' + self.icecast2_config["mount"]
+        s.format = self.icecast2_config["codec"]
+        s.protocol = 'http'
+        s.name = self.icecast2_config["name"]
+        s.description = self.icecast2_config["description"]
+        s.genre = self.icecast2_config["genre"]
+        s.url = self.icecast2_config["url"]
+        s.public = 1  # 0 | 1
+        s.audio_info = {
+            shout.SHOUT_AI_BITRATE: self.icecast2_config["bitrate"],
+            shout.SHOUT_AI_SAMPLERATE: self.icecast2_config["samplerate"]
+        }
+        return s
+
     def get_redis_data(self):
         try:
             raw_json = self.redis_server.get(self.redis_daemon_key)
@@ -181,24 +201,7 @@ class MusicDaemon:
             self.redis_server = redis.StrictRedis(host=redis_host, port=redis_port, db=0)
 
         s = shout.Shout()
-
-        s.host = self.icecast2_config["host"]
-        s.port = int(self.icecast2_config["port"])
-        s.user = self.icecast2_config["user"]
-        s.password = self.icecast2_config["password"]
-        # s.password = ""
-        s.mount = '/' + self.icecast2_config["mount"]
-        s.format = self.icecast2_config["codec"]
-        s.protocol = 'http'
-        s.name = self.icecast2_config["name"]
-        s.description = self.icecast2_config["description"]
-        s.genre = self.icecast2_config["genre"]
-        s.url = self.icecast2_config["url"]
-        s.public = 1    # 0 | 1
-        s.audio_info = {
-            shout.SHOUT_AI_BITRATE: self.icecast2_config["bitrate"],
-            shout.SHOUT_AI_SAMPLERATE: self.icecast2_config["samplerate"]
-        }
+        self.configure_shout(s)
 
         is_connected = True
         try:
@@ -315,14 +318,23 @@ class MusicDaemon:
                                 s.send(chunk)
                                 s.sync()
                             except shout.ShoutException as e:
-                                s.close()
-                                s.open()
-                                # is_streaming = False
-                                # f.close()
-                                # f = None
-                                #
-                                # self.stop_send_music(self.now_playing)
-                                # self.logger.log('streaming error', "{}".format(e))
+                                s = shout.Shout()
+                                self.configure_shout(s)
+
+                                is_streaming = False
+                                f.close()
+                                f = None
+
+                                self.stop_send_music(self.now_playing)
+                                self.logger.log('streaming error', "{}".format(e))
+
+                                try:
+                                    s.open()
+                                    self.logger.log('icecast2', "connecting icecast2 server")
+                                except shout.ShoutException as e:
+                                    self.logger.log('icecast2', "{}".format(e))
+                                else:
+                                    self.logger.log('icecast2', "icecast2 server connected")
 
         if is_connected:
             s.close()
